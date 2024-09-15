@@ -3,7 +3,7 @@ const bodyParser = require("body-parser");
 const authRoutes = require("./routes/auth");
 const jobsRoutes = require("./routes/jobs")
 const app = express();
-const port = 3000;
+const port = 9000;
 const cors = require("cors");  // Import cors
 
 // Middleware to parse incoming JSON

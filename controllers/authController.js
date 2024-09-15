@@ -5,38 +5,42 @@ const User = require("../models/userModel");
 const SECRET_KEY = "piyush"; // In production, use environment variables
 const validator = require("validator"); // npm install validator
 
-// Helper function to validate email and password
-const validateRegisterInput = (email, password) => {
-  const errors = [];
-
-  // Validate email format
+// Helper function to validate email
+const validateEmail = (email) => {
   if (!email || !validator.isEmail(email)) {
-    errors.push("Invalid email address.");
+    throw new Error("Invalid email address.");
   }
+};
 
-  // Validate password length and strength
+// Helper function to validate password
+const validatePassword = (password) => {
   if (!password || typeof password !== "string" || password.length < 8) {
-    errors.push("Password must be at least 8 characters long.");
+    throw new Error("Password must be at least 8 characters long.");
   }
 
-  // Password strength: Should include at least one letter and one number
   const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)/;
   if (!passwordRegex.test(password)) {
-    errors.push("Password must contain at least one letter and one number.");
+    throw new Error("Password must contain at least one letter and one number.");
   }
-
-  return errors;
 };
 
 // Registration Controller
 const register = async (req, res) => {
   try {
-    const { username, password ,userType} = req.body;
+    const { username, password, userType } = req.body;
+    console.log(req.body, 'BODY');
 
-    // Validate email and password
-    const validationErrors = validateRegisterInput(username, password);
-    if (validationErrors.length > 0) {
-      return res.status(400).json({ errors: validationErrors });
+    // Validate email and password individually
+    try {
+      validateEmail(username);
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    try {
+      validatePassword(password);
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
     }
 
     // Check if user already exists
@@ -49,7 +53,7 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create and save the user
-    const newUser = new User(username, hashedPassword,userType);
+    const newUser = new User(username, hashedPassword, userType);
     users.push(newUser);
 
     res.status(201).json({ message: "User registered successfully" });
@@ -62,12 +66,16 @@ const register = async (req, res) => {
 // Login Controller
 const login = async (req, res) => {
   try {
-    const { username: email, password} = req.body;
+    const { username: email, password } = req.body;
 
-    // Check if email and password are provided
-    if (!email || !validator.isEmail(email)) {
-      return res.status(400).json({ message: "Invalid email address" });
+    // Validate email
+    try {
+      validateEmail(email);
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
     }
+
+    // Check if password is provided
     if (!password) {
       return res.status(400).json({ message: "Password is required" });
     }

@@ -56,7 +56,9 @@ const register = async (req, res) => {
     const newUser = new User(username, hashedPassword, userType);
     users.push(newUser);
 
-    res.status(201).json({ message: "User registered successfully" });
+    const token = jwt.sign({ username: username }, SECRET_KEY, { expiresIn: "1h" });
+
+    res.status(201).json({ message: "User registered successfully",token,success: true ,isOnBoardingCompleted:false});
   } catch (error) {
     console.error("Error during registration:", error);
     res.status(500).json({ message: "Server error" });
@@ -82,6 +84,7 @@ const login = async (req, res) => {
 
     // Find the user by email
     const user = users.find((user) => user.username === email);
+    console.log({user})
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -95,7 +98,16 @@ const login = async (req, res) => {
     // Generate a JWT token
     const token = jwt.sign({ username: user.username }, SECRET_KEY, { expiresIn: "1h" });
 
-    res.status(200).json({ message: "Login successful", token });
+    userProfile = {
+      id: user?.id || "",
+      personalDetail: user?.personalDetail || "",
+      email: user.username || "",
+      educationalDetail : user?.educationDetail || "",
+      skills: user?.skillDetail || "",
+      role: user?.userType || "",
+      isOnBoardingCompleted: user.isOnBoardingCompleted,
+    }
+    res.status(200).json({ message: "Login successful", token,userProfile });
   } catch (error) {
     console.error("Error during login:", error);
     res.status(500).json({ message: "Server error" });
@@ -108,4 +120,36 @@ const profile = (req, res) => {
   res.status(200).json({ message: `Welcome ${user.username}!` });
 };
 
-module.exports = { register, login, profile };
+const completeOnBoarding = (req,res) =>{
+  const email = req.email;
+  console.log(email)
+  const { personalDetail,education,skills,isOnBoardingCompleted } = req.body; 
+  const userIndex = users.findIndex((user) => user.username === email);
+
+  if (userIndex === -1) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  if (personalDetail) users[userIndex].personalDetail = personalDetail;
+  if (education) users[userIndex].education = education;
+  if (skills) users[userIndex].skills = skills;
+  if (isOnBoardingCompleted) users[userIndex].isOnBoardingCompleted = isOnBoardingCompleted
+
+  const user = users[userIndex]
+  userProfile = {
+    id: user?.id || "",
+    personalDetail: user?.personalDetail || "",
+    email: user.username || "",
+    educationalDetail : user?.educationDetail || "",
+    skills: user?.skillDetail || "",
+    role: user?.userType || "",
+    isOnBoardingCompleted: user.isOnBoardingCompleted,
+  }
+
+  // Respond with the updated user info
+  res.status(200).json({
+    message: "Profile updated successfully",
+    userProfile,
+  });
+}
+
+module.exports = { register, login, profile ,completeOnBoarding};

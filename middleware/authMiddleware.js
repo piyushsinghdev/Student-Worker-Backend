@@ -6,17 +6,18 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    return res.sendStatus(401); // Unauthorized
+    return res.status(401).json({ message: "Access denied. No token provided." });
   }
 
   // Verify token
-  jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) {
-      return res.sendStatus(403); // Forbidden
-    }
-    req.user = user;
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    console.log(decoded)
+    req.email = decoded.username;
     next();
-  });
+  } catch (error) {
+    res.status(400).json({ message: "Invalid token." });
+  }
 };
 
 module.exports = { authenticateToken };
